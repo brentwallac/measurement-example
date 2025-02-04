@@ -1,58 +1,32 @@
-body {
-    font-family: Arial, sans-serif;
-    background-color: #f4f4f4;
-    text-align: center;
-    margin: 0;
-    padding: 0;
-}
+function calculateChargeableWeight() {
+    let length = parseFloat(document.getElementById("length").value) / 100; // Convert cm to meters
+    let width = parseFloat(document.getElementById("width").value) / 100;
+    let height = parseFloat(document.getElementById("height").value) / 100;
+    let weight = parseFloat(document.getElementById("weight").value);
+    let freightType = document.getElementById("freightType").value;
 
-.container {
-    width: 50%;
-    margin: auto;
-    background: white;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-    margin-top: 50px;
-}
+    if (isNaN(length) || isNaN(width) || isNaN(height) || isNaN(weight)) {
+        alert("Please enter valid numerical values.");
+        return;
+    }
 
-h2 {
-    color: #333;
-}
+    // Calculate CBM (Cubic Meter)
+    let cbm = length * width * height;
+    document.getElementById("cbmOutput").textContent = cbm.toFixed(2);
 
-label {
-    display: block;
-    margin: 10px 0 5px;
-    font-weight: bold;
-}
+    let chargeableWeight = 0;
+    let volumetricWeight = 0;
 
-input, select {
-    width: 80%;
-    padding: 8px;
-    margin-bottom: 15px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-}
+    if (freightType === "air") {
+        // Air Freight Calculation (Volumetric Weight)
+        volumetricWeight = (length * 100) * (width * 100) * (height * 100) / 6000; 
+        chargeableWeight = Math.max(volumetricWeight, weight);
+        document.getElementById("volWeightOutput").textContent = volumetricWeight.toFixed(2);
+    } else {
+        // LCL (Sea Freight) Calculation (Compare CBM vs. Metric Tons)
+        chargeableWeight = Math.max(cbm, weight / 1000);
+        document.getElementById("volWeightOutput").textContent = "N/A";
+    }
 
-button {
-    background: #007BFF;
-    color: white;
-    padding: 10px 15px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-button:hover {
-    background: #0056b3;
-}
-
-h3 {
-    margin-top: 20px;
-    color: #555;
-}
-
-p {
-    font-size: 18px;
-    color: #333;
+    document.getElementById("chargeableWeight").textContent = chargeableWeight.toFixed(2);
 }
