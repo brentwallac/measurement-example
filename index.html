@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Freight Chargeable Weight Calculator</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h2>Freight Chargeable Weight Calculator</h2>
+        
+        <label for="length">Length (cm):</label>
+        <input type="number" id="length" placeholder="Enter length in cm">
+
+        <label for="width">Width (cm):</label>
+        <input type="number" id="width" placeholder="Enter width in cm">
+
+        <label for="height">Height (cm):</label>
+        <input type="number" id="height" placeholder="Enter height in cm">
+
+        <label for="weight">Actual Weight (kg):</label>
+        <input type="number" id="weight" placeholder="Enter weight in kg">
+
+        <label for="freightType">Freight Type:</label>
+        <select id="freightType">
+            <option value="lcl">LCL (Sea Freight)</option>
+            <option value="air">Air Freight</option>
+        </select>
+
+        <button onclick="calculateChargeableWeight()">Calculate</button>
+
+        <h3>Results</h3>
+        <p><strong>CBM (Cubic Meters):</strong> <span id="cbmOutput">0</span></p>
+        <p><strong>Volumetric Weight (Air Freight):</strong> <span id="volWeightOutput">0</span> kg</p>
+        <p><strong>Chargeable Weight:</strong> <span id="chargeableWeight">0</span> kg</p>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
