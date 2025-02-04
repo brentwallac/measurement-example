@@ -295,11 +295,9 @@
     document.getElementById(tabId).classList.remove('hidden');
   }
 
+  <script>
   function calculateFreightCost() {
-    // Same calculator logic as before
-    let breakdownText = "";
-    const addLine = (str) => { breakdownText += str + "\n\n"; };
-
+    // 1) Gather inputs
     const length = parseFloat(document.getElementById("length").value);
     const width = parseFloat(document.getElementById("width").value);
     const height = parseFloat(document.getElementById("height").value);
@@ -311,6 +309,7 @@
     const buyRate = parseFloat(document.getElementById("buyRate").value);
     const marginRate = parseFloat(document.getElementById("marginRate").value);
 
+    // Basic validation
     if (
       isNaN(length) || isNaN(width) || isNaN(height) ||
       isNaN(weightKG) || isNaN(buyRate) || isNaN(marginRate)
@@ -319,162 +318,209 @@
       return;
     }
 
-    // 1) Common calculations
+    // We'll accumulate a multi-step breakdown
+    let breakdownText = "";
+    const addLine = (str) => {
+      breakdownText += str + "\n\n"; // separate lines with double newlines
+    };
+
+    // --------------------------------------------------------------------
+    // STEP A: Common Calculations
+    // --------------------------------------------------------------------
+    addLine("STEP A: Preliminary Calculations");
+
+    // Volume in CBM
+    // Formula: Volume (m^3) = Length × Width × Height
     const measureSideCBM = length * width * height;
+    addLine(`1) Volume (CBM) Calculation:
+   Formula: Volume = L × W × H
+   => ${length} × ${width} × ${height}
+   => ${measureSideCBM.toFixed(3)} m³`);
+
+    // Actual weight in metric tons
+    // Formula: Weight (MT) = weightKG ÷ 1000
     const actualWeightTons = weightKG / 1000;
+    addLine(`2) Actual Weight in Metric Tons:
+   Formula: Weight (MT) = weightKG ÷ 1000
+   => ${weightKG} ÷ 1000
+   => ${actualWeightTons.toFixed(3)} MT`);
 
-    // =========== BUY RATE (W/M) ============
-    addLine("=== BUY RATE: WEIGHT OR MEASURE (W/M) ===");
-
-    let buyWeightSide = actualWeightTons;
-    addLine(`Volume (CBM) L * W * H = ${measureSideCBM.toFixed(3)}
-Weight (MT) = ${buyWeightSide.toFixed(3)}`);
-
-    // If air, check volumetric
-    if (freightType === "air") {
-      addLine("Freight Type = Air => check volumetric weight:");
+    // We'll also define a helper for volumetric if freightType = "air"
+    function getVolumetricTons() {
+      // Convert meters to centimeters
       const lengthCM = length * 100;
       const widthCM = width * 100;
       const heightCM = height * 100;
+      // Volumetric formula: (L_cm × W_cm × H_cm) ÷ 6000 => in kg
       const volumeCC = lengthCM * widthCM * heightCM;
       const volumetricKG = volumeCC / 6000;
-      const volumetricTons = volumetricKG / 1000;
-
-      addLine(`volumetricKG = (L_cm × W_cm × H_cm) ÷ 6000 = ${volumetricKG.toFixed(2)}
-volumetricTons = ${volumetricTons.toFixed(3)}
-Compare vs actualWeightTons = ${buyWeightSide.toFixed(3)}`);
-
-      if (volumetricTons > buyWeightSide) {
-        buyWeightSide = volumetricTons;
-        addLine(`=> using volumetricTons = ${buyWeightSide.toFixed(3)}`);
-      } else {
-        addLine(`=> keep actualWeightTons = ${buyWeightSide.toFixed(3)}`);
-      }
-    } else {
-      addLine("Not air => skip volumetric check for Buy Rate.");
+      // Convert to metric tons
+      return volumetricKG / 1000;
     }
 
-    addLine(`Compare buyWeightSide (${buyWeightSide.toFixed(3)}) vs measureSideCBM (${measureSideCBM.toFixed(3)})
-=> pick whichever is larger for W/M.`);
+    // --------------------------------------------------------------------
+    // STEP B: BUY RATE (Always W/M)
+    // --------------------------------------------------------------------
+    addLine("STEP B: Buy Rate Calculation (W/M)");
+
+    // Start with weight side = actualWeightTons
+    let buyWeightSide = actualWeightTons;
+    addLine(`1) Weight side (MT) starts as Actual Weight:
+   => ${buyWeightSide.toFixed(3)} MT`);
+
+    // If air, compare volumetric
+    if (freightType === "air") {
+      addLine(`2) Air Freight => Compare Volumetric Weight to Actual Weight:
+   Formula: volumetricKG = (L_cm × W_cm × H_cm) ÷ 6000
+   Then volumetricTons = volumetricKG ÷ 1000`);
+
+      const volTons = getVolumetricTons();
+      addLine(`   => volumetricTons = ${volTons.toFixed(3)} MT
+   Compare vs actualWeightTons = ${buyWeightSide.toFixed(3)} MT`);
+
+      if (volTons > buyWeightSide) {
+        buyWeightSide = volTons;
+        addLine(`   => Using volumetricTons = ${buyWeightSide.toFixed(3)} (it's bigger)`);
+      } else {
+        addLine("   => Keeping actual weight (it's bigger).");
+      }
+    } else {
+      addLine("2) Not air => skip volumetric check for Buy Rate.");
+    }
+
+    // Now compare buyWeightSide to measureSideCBM
+    addLine(`3) Compare Weight side vs Volume:
+   Weight side (MT) = ${buyWeightSide.toFixed(3)}
+   Volume (m³)      = ${measureSideCBM.toFixed(3)}
+   W/M picks whichever is bigger.`);
 
     const buyRateUnits = Math.max(buyWeightSide, measureSideCBM);
-    addLine(`=> buyRateUnits = ${buyRateUnits.toFixed(3)}`);
+    addLine(`   => buyRateUnits = ${buyRateUnits.toFixed(3)}`);
 
+    // Multiply by buyRate
     const buyRateCost = buyRateUnits * buyRate;
-    addLine(`Buy Rate Cost = buyRateUnits × buyRate = ${buyRateUnits.toFixed(3)} × $${buyRate} = $${buyRateCost.toFixed(2)}`);
+    addLine(`4) Buy Rate Cost:
+   Buy Rate Cost = buyRateUnits × buyRate
+                 = ${buyRateUnits.toFixed(3)} × $${buyRate}
+                 = $${buyRateCost.toFixed(2)}`);
 
-    // =========== MARGIN RATE (selected rule) =============
-    addLine("=== MARGIN RATE: SELECTED RULE ===");
-
+    // --------------------------------------------------------------------
+    // STEP C: Margin Rate (Selected Rule)
+    // --------------------------------------------------------------------
+    addLine("STEP C: Margin Rate Calculation (Selected Rule)");
     let marginUnits = 0;
 
-    function applyAirVolumetric(baseWeightTons) {
+    // We'll define a small helper for applying air volumetric if needed
+    function applyAirCheck(baseWeightTons) {
       if (freightType === "air") {
-        addLine("Check volumetric for margin side as well:");
-        const lengthCM = length * 100;
-        const widthCM = width * 100;
-        const heightCM = height * 100;
-        const volumeCC = lengthCM * widthCM * heightCM;
-        const volumetricKG = volumeCC / 6000;
-        const volumetricTons = volumetricKG / 1000;
-
-        addLine(`volumetricTons = ${volumetricTons.toFixed(3)}
-Compare vs baseWeightTons = ${baseWeightTons.toFixed(3)}`);
-        if (volumetricTons > baseWeightTons) {
-          addLine(`=> using volumetricTons = ${volumetricTons.toFixed(3)}`);
-          return volumetricTons;
+        addLine(`   Compare baseWeightTons (${baseWeightTons.toFixed(3)} MT) vs. volumetricTons...`);
+        const volTons = getVolumetricTons();
+        addLine(`   => volumetricTons = ${volTons.toFixed(3)} MT`);
+        if (volTons > baseWeightTons) {
+          addLine(`   => volumetric is bigger => use ${volTons.toFixed(3)}`);
+          return volTons;
         } else {
-          addLine(`=> keep baseWeightTons = ${baseWeightTons.toFixed(3)}`);
+          addLine(`   => keep ${baseWeightTons.toFixed(3)} MT`);
           return baseWeightTons;
         }
       } else {
-        addLine("Not air => skip volumetric for margin side.");
+        addLine("   Not air => skip volumetric for margin side.");
         return baseWeightTons;
       }
     }
 
     switch (marginRule) {
       case "CW_1_TO_3": {
-        addLine("Rule: 1 CBM = 333 kg => ratio-based weight vs actual weight, then compare to CBM");
-        const ratioWeightTons = (measureSideCBM * 333) / 1000;
-        addLine(`ratioWeightTons = (CBM × 333) ÷ 1000
-= ${ratioWeightTons.toFixed(3)} MT
-Compare vs actualWeightTons = ${actualWeightTons.toFixed(3)}`);
-        let weightSide = Math.max(ratioWeightTons, actualWeightTons);
-        addLine(`=> weightSide = ${weightSide.toFixed(3)} MT (larger of ratio/actual)`);
-        weightSide = applyAirVolumetric(weightSide);
+        addLine("Rule: CW_1_TO_3 => 1 CBM = 333 kg => 0.333 MT per CBM");
+        const ratioTons = (measureSideCBM * 333) / 1000;
+        addLine(`   ratioTons = (CBM × 333) ÷ 1000
+               = ${ratioTons.toFixed(3)} MT
+   Compare vs actualWeightTons (${actualWeightTons.toFixed(3)}) => pick bigger.`);
+
+        let weightSide = Math.max(ratioTons, actualWeightTons);
+        addLine(`   => weightSide = ${weightSide.toFixed(3)} MT`);
+        weightSide = applyAirCheck(weightSide);
+
+        addLine(`   Finally compare weightSide vs. measureSideCBM => marginUnits.`);
         marginUnits = Math.max(weightSide, measureSideCBM);
-        addLine(`=> marginUnits = max(${weightSide.toFixed(3)}, ${measureSideCBM.toFixed(3)}) = ${marginUnits.toFixed(3)}`);
+        addLine(`   => marginUnits = ${marginUnits.toFixed(3)}`);
         break;
       }
 
       case "CW_1_TO_6": {
-        addLine("Rule: 1 CBM = 167 kg => ratio-based weight vs actual weight, then compare to CBM");
-        const ratioWeightTons = (measureSideCBM * 167) / 1000;
-        addLine(`ratioWeightTons = (CBM × 167) ÷ 1000
-= ${ratioWeightTons.toFixed(3)} MT`);
-        let weightSide = Math.max(ratioWeightTons, actualWeightTons);
-        addLine(`=> weightSide = ${weightSide.toFixed(3)} MT`);
-        weightSide = applyAirVolumetric(weightSide);
+        addLine("Rule: CW_1_TO_6 => 1 CBM = 167 kg => 0.167 MT per CBM");
+        const ratioTons = (measureSideCBM * 167) / 1000;
+        addLine(`   ratioTons = (CBM × 167) ÷ 1000
+               = ${ratioTons.toFixed(3)} MT`);
+
+        let weightSide = Math.max(ratioTons, actualWeightTons);
+        addLine(`   => weightSide = ${weightSide.toFixed(3)} MT (bigger of ratio or actual)`);
+        weightSide = applyAirCheck(weightSide);
+
         marginUnits = Math.max(weightSide, measureSideCBM);
-        addLine(`=> marginUnits = ${marginUnits.toFixed(3)}`);
+        addLine(`   => marginUnits = ${marginUnits.toFixed(3)}`);
         break;
       }
 
       case "M": {
-        addLine("Rule: Per Cubic Meter => purely CBM");
+        addLine("Rule: M => purely per cubic meter (CBM).");
         marginUnits = measureSideCBM;
-        addLine(`=> marginUnits = ${marginUnits.toFixed(3)}`);
+        addLine(`   => marginUnits = ${marginUnits.toFixed(3)} m³`);
         break;
       }
 
       case "W/M": {
-        addLine("Rule: Weight or Measure => compare weight side vs volume for margin");
-        let wSide = applyAirVolumetric(actualWeightTons);
+        addLine("Rule: W/M => compare weight side (MT) vs. volume (CBM). If air, check volumetric.");
+        let wSide = applyAirCheck(actualWeightTons);
         marginUnits = Math.max(wSide, measureSideCBM);
-        addLine(`=> marginUnits = max(${wSide.toFixed(3)}, ${measureSideCBM.toFixed(3)}) = ${marginUnits.toFixed(3)}`);
+        addLine(`   => marginUnits = ${marginUnits.toFixed(3)}`);
         break;
       }
 
       case "PER_KG": {
-        addLine("Rule: Per KG => purely actual kg (no volume check).");
+        addLine("Rule: Per KG => purely actual weight in kilograms (no volume).");
         marginUnits = weightKG;
-        addLine(`=> marginUnits = ${marginUnits} kg`);
+        addLine(`   => marginUnits = ${weightKG} kg`);
         break;
       }
 
       case "PER_W": {
-        addLine("Rule: Per Weight => purely MT, possibly air volumetric if bigger.");
-        let wTons = applyAirVolumetric(actualWeightTons);
+        addLine("Rule: Per W => purely weight in MT, possibly air volumetric.");
+        let wTons = applyAirCheck(actualWeightTons);
         marginUnits = wTons;
-        addLine(`=> marginUnits = ${marginUnits.toFixed(3)} MT`);
+        addLine(`   => marginUnits = ${marginUnits.toFixed(3)} MT`);
         break;
       }
 
       case "PER_M": {
-        addLine("Rule: Per Measure => purely CBM, ignoring weight.");
+        addLine("Rule: Per M => purely volume in CBM, ignoring weight.");
         marginUnits = measureSideCBM;
-        addLine(`=> marginUnits = ${marginUnits.toFixed(3)} m³`);
+        addLine(`   => marginUnits = ${marginUnits.toFixed(3)} m³`);
         break;
       }
     }
 
     const marginCost = marginUnits * marginRate;
-    addLine(`Margin Cost = marginUnits × marginRate
-= ${marginUnits.toFixed(3)} × $${marginRate} 
-= $${marginCost.toFixed(2)}`);
+    addLine(`2) Margin Cost = marginUnits × marginRate
+           = ${marginUnits.toFixed(3)} × $${marginRate}
+           = $${marginCost.toFixed(2)}`);
+
+    // --------------------------------------------------------------------
+    // STEP D: Final Totals
+    // --------------------------------------------------------------------
+    addLine("STEP D: Final Totals");
 
     const totalCost = buyRateCost + marginCost;
-    addLine("=== FINAL TOTAL ===");
-    addLine(`Buy Rate Cost = $${buyRateCost.toFixed(2)}
-Margin Cost  = $${marginCost.toFixed(2)}
-Total        = $${totalCost.toFixed(2)}`);
+    addLine(`1) Buy Rate Cost = $${buyRateCost.toFixed(2)}
+2) Margin Cost = $${marginCost.toFixed(2)}
+=> Total Freight Cost = $${totalCost.toFixed(2)}`);
 
-    // ELI5
+    // ELI5 Explanation
     const simplifiedText = `
-1) Buy Rate uses W/M (weight in MT vs. CBM). If Air, also check volumetric weight.
-2) Margin Rate uses the selected rule: ratio-based, pure CBM, pure KG, or W/M, etc.
-3) Total = Buy Rate Cost + Margin Cost.
+We do W/M for the Buy Rate, meaning we compare weight (in metric tons) 
+or volumetric if air, against volume (CBM). Whichever is bigger is our 
+“Buy Rate Units.” For the Margin, we apply whichever rule you selected 
+(1:3, 1:6, per KG, etc.). Finally, we add the Buy Rate Cost + Margin Cost.
     `.trim();
 
     // Update the UI
@@ -482,12 +528,14 @@ Total        = $${totalCost.toFixed(2)}`);
     document.getElementById("ELI5Explanation").textContent = simplifiedText;
     document.getElementById("ELI5Explanation").classList.add("hidden");
 
+    // For the Results Panel
     document.getElementById("buyUnitsDisplay").textContent = buyRateUnits.toFixed(3);
     document.getElementById("marginUnitsDisplay").textContent = marginUnits.toFixed(3);
     document.getElementById("buyRateCost").textContent = `$${buyRateCost.toFixed(2)}`;
     document.getElementById("marginCost").textContent = `$${marginCost.toFixed(2)}`;
     document.getElementById("totalCost").textContent = `$${totalCost.toFixed(2)}`;
   }
+</script>
 </script>
 
 </body>
