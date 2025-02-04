@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Freight Calculator: Buy Rate (W/M) & Margin Rate (Multiple Methods)</title>
+  <title>Freight Calculator: Buy Rate Modified for Air (CM 1:6) & W/M for LCL</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
@@ -16,7 +16,7 @@
     Freight Buy Rate Calculator
     <br/>
     <span class="text-lg">
-      Buy Rate = W/M; Margin Rate = Selected Rule
+      Buy Rate = (1:6 for Air) or (W/M for LCL); Margin Rate = Selected Rule
     </span>
   </h2>
 
@@ -39,7 +39,6 @@
   <!-- CALCULATOR TAB -->
   <div id="calculatorTab" class="tabContent">
 
-    <!-- Grid Layout -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
       <!-- Left Column: Inputs -->
@@ -88,7 +87,7 @@
           class="w-full p-2 border rounded mb-4"
         />
 
-        <!-- Margin Rule -->
+        <!-- Margin Rule (Method) -->
         <label class="block font-medium mb-1">
           Margin Rule (Method):
         </label>
@@ -104,7 +103,7 @@
 
         <!-- Buy Rate & Margin Rate -->
         <label class="block font-medium mb-1">
-          Buy Rate (USD per W/M unit):
+          Buy Rate (USD):
         </label>
         <input
           type="number"
@@ -159,14 +158,20 @@
         <h3 class="text-xl font-semibold mb-4">Results</h3>
 
         <p>
-          <strong title="Units used for the Buy Rate: W/M approach." class="cursor-help">
-            Buy Rate Units (W/M):
+          <strong
+            title="Units used for the Buy Rate. LCL => W/M, Air => 1:6"
+            class="cursor-help"
+          >
+            Buy Rate Units:
           </strong>
           <span id="buyUnitsDisplay">0</span>
         </p>
 
         <p>
-          <strong title="Units used for the Margin cost, based on the selected rule." class="cursor-help">
+          <strong
+            title="Units used for the Margin cost, based on the selected rule."
+            class="cursor-help"
+          >
             Margin Units:
           </strong>
           <span id="marginUnitsDisplay">0</span>
@@ -196,93 +201,68 @@
     <h3 class="text-2xl font-semibold mb-4">Developer Cheat Sheet</h3>
 
     <p class="mb-4">
-      This page explains the core formulas used throughout the calculator.
+      This page explains the core formulas used in the calculator. 
+      <strong>Note:</strong> For Air Freight, the Buy Rate uses a 
+      <em>1:6 ratio</em> (1 CBM = 167 kg). For LCL, we use the 
+      <em>Weight or Measure</em> (W/M) approach.
     </p>
 
     <ol class="list-decimal list-inside space-y-4 text-sm">
       <li>
         <strong>Cubic Meters (CBM)</strong><br/>
-        Formula: <code>CBM = Length (m) × Width (m) × Height (m)</code><br/>
-        Example: if Length=2.0, Width=1.5, Height=1.0 (all in meters), then 
-        CBM = <code>2.0 × 1.5 × 1.0 = 3.0</code>.
+        Formula: <code>CBM = Length (m) × Width (m) × Height (m)</code>
       </li>
-
       <li>
         <strong>Metric Tons (MT)</strong><br/>
-        Formula: <code>Weight (kg) ÷ 1000</code><br/>
-        Example: if the cargo weighs 1500 kg, that’s 
-        <code>1500 ÷ 1000 = 1.5 MT</code>.
+        Formula: <code>Weight (kg) ÷ 1000</code>
       </li>
-
       <li>
-        <strong>Air Freight Volumetric Weight</strong><br/>
-        If Freight Type = “Air,” we calculate volumetric weight (in kg) via 
-        <code>(Length_cm × Width_cm × Height_cm) ÷ 6000</code>, then convert 
-        to metric tons by dividing by 1000. We compare this volumetric value 
-        to the actual weight and use whichever is higher for the “weight side.”
+        <strong>1:6 Ratio (Buy Rate for Air)</strong><br/>
+        1 CBM = 167 kg. After you compute the shipment's volume, 
+        multiply by 167 to get a “ratio weight” in kg, then compare 
+        that to the actual weight in kg. Whichever is bigger, convert 
+        to tons if needed or keep in kg depending on how you finalize 
+        your cost multiplication.
       </li>
-
       <li>
-        <strong>Weight or Measure (W/M)</strong><br/>
-        Under W/M, compare weight (in MT) vs. volume (in CBM), and pick the 
-        larger number as the chargeable unit.
+        <strong>Weight or Measure (W/M) (Buy Rate for LCL)</strong><br/>
+        Compare weight (in MT) vs. volume (in CBM), pick whichever is larger.
       </li>
-
       <li>
         <strong>Margin Methods:</strong><br/>
         <ul class="list-disc ml-6">
           <li>
             <strong>CW_1_TO_3</strong> → 1 CBM = 333 kg 
-            (so CBM × 333 kg, then compare to actual weight).
           </li>
           <li>
             <strong>CW_1_TO_6</strong> → 1 CBM = 167 kg
-            (so CBM × 167 kg, then compare to actual weight).
           </li>
           <li>
-            <strong>M (Per Cubic Meter)</strong> → uses only CBM, ignores weight.
+            <strong>M</strong> → Per Cubic Meter only
           </li>
           <li>
-            <strong>W/M</strong> → standard “Weight or Measure” comparison.
+            <strong>W/M</strong> → Weight or Measure
           </li>
           <li>
-            <strong>PER_KG</strong> → purely actual weight in kilograms.
+            <strong>PER_KG</strong> → purely actual weight in kg
           </li>
           <li>
-            <strong>PER_W (metric tons)</strong> → uses weight in MT, 
-            and if Air Freight, may compare with volumetric tons.
+            <strong>PER_W</strong> → weight in MT (possibly volumetric for air)
           </li>
           <li>
-            <strong>PER_M (CBM)</strong> → purely the measured CBM.
+            <strong>PER_M</strong> → volume in CBM only
           </li>
         </ul>
       </li>
-
       <li>
         <strong>Total Cost</strong><br/>
-        We split costs into “Buy Rate” (always W/M) and “Margin Rate” 
-        (the chosen rule). Then:
-        <br/>
-        <code>
-          Buy Rate Cost = (Buy Rate Units) × (Buy Rate)</code><br/>
-        <code>
-          Margin Cost = (Margin Units) × (Margin Rate)</code><br/>
-        <code>
-          Total Freight Cost = Buy Rate Cost + Margin Cost</code>
+        (Buy Rate Units × Buy Rate) + (Margin Units × Margin Rate).
       </li>
     </ol>
   </div> <!-- End devCheatSheetTab -->
 </div> <!-- End container -->
 
 <script>
-  /**
-   * Toggle the Simple Explanation (ELI5)
-   */
-  function toggleELI5() {
-    const eli5Box = document.getElementById("ELI5Explanation");
-    eli5Box.classList.toggle("hidden");
-  }
-
   /**
    * Show/Hide Tabs
    */
@@ -294,8 +274,14 @@
     // Show the selected tab
     document.getElementById(tabId).classList.remove('hidden');
   }
+
+  function toggleELI5() {
+    const eli5Box = document.getElementById("ELI5Explanation");
+    eli5Box.classList.toggle("hidden");
+  }
+
   function calculateFreightCost() {
-    // 1) Gather inputs from the form
+    // 1) Gather form inputs
     const length = parseFloat(document.getElementById("length").value);
     const width = parseFloat(document.getElementById("width").value);
     const height = parseFloat(document.getElementById("height").value);
@@ -307,7 +293,6 @@
     const buyRate = parseFloat(document.getElementById("buyRate").value);
     const marginRate = parseFloat(document.getElementById("marginRate").value);
 
-    // Basic validation
     if (
       isNaN(length) || isNaN(width) || isNaN(height) ||
       isNaN(weightKG) || isNaN(buyRate) || isNaN(marginRate)
@@ -316,221 +301,212 @@
       return;
     }
 
-    // We'll accumulate a breakdown as multiline text
+    // We'll build the breakdown text step by step
     let breakdownText = "";
-    const addLine = (str) => {
-      breakdownText += str + "\n\n";
-    };
+    const addLine = (str) => { breakdownText += str + "\n\n"; };
 
-    // --------------------------------------------------------------------
-    // STEP A: Common Calculations
-    // --------------------------------------------------------------------
-    addLine("STEP A: Common Calculations");
-
-    // Volume in CBM
-    // Formula: CBM = (Length in m) × (Width in m) × (Height in m)
+    // 2) Common calculations
     const measureSideCBM = length * width * height;
-    addLine(`1) Volume (CBM)
-   Formula: CBM = Length(m) × Width(m) × Height(m)
-   => ${length} × ${width} × ${height} = ${measureSideCBM.toFixed(3)} m³`);
+    const actualWeightKG = weightKG;           // We'll keep it in KG for air logic
+    const actualWeightTons = weightKG / 1000;  // for LCL / other references
 
-    // Actual weight in Metric Tons
-    // Formula: actualWeightTons = weightKG ÷ 1000
-    const actualWeightTons = weightKG / 1000;
-    addLine(`2) Actual Weight in Metric Tons (MT)
-   Formula: weightKG ÷ 1000
-   => ${weightKG} ÷ 1000 = ${actualWeightTons.toFixed(3)} MT`);
+    addLine(`Common Data:
+- Volume (CBM) = L × W × H = ${measureSideCBM.toFixed(3)}
+- Actual Weight = ${actualWeightKG.toFixed(2)} kg = ${actualWeightTons.toFixed(3)} MT
+- Freight Type = ${freightType}
+`);
 
-    // Function to compute air volumetric in metric tons
-    function getVolumetricTons() {
-      // 1) Convert meters to centimeters for each dimension
+    // ========== BUY RATE (depends on Freight Type) ==========
+    let buyRateUnits = 0;
+    addLine("=== BUY RATE CALC ===");
+
+    if (freightType === "air") {
+      addLine("Freight Type = Air => Using 1:6 ratio for Buy Rate.");
+      // 1 CBM = 167 kg
+      // We'll compare ratio-based weight in KG vs. actual weight in KG
+      const ratioWeightKG = measureSideCBM * 167;
+      addLine(`Ratio Weight (1:6) = measureSideCBM × 167
+= ${measureSideCBM.toFixed(3)} × 167 
+= ${ratioWeightKG.toFixed(2)} kg
+
+Compare ratioWeightKG (${ratioWeightKG.toFixed(2)}) vs actualWeightKG (${actualWeightKG.toFixed(2)}).
+`);
+
+      const biggerKG = Math.max(ratioWeightKG, actualWeightKG);
+      addLine(`=> biggerKG = ${biggerKG.toFixed(2)} kg (chargeable weight for buy side).`);
+
+      // If the carrier expects the rate in metric tons, do biggerKG / 1000
+      // But let's assume the user’s "buyRate" is per "ton" or something. 
+      // We can convert to tons:
+      const buySideTons = biggerKG / 1000;
+      addLine(`Convert to metric tons if needed => ${buySideTons.toFixed(3)} MT`);
+
+      // That is our final buyRateUnits
+      buyRateUnits = buySideTons; 
+      addLine(`=> buyRateUnits (Air, 1:6) = ${buyRateUnits.toFixed(3)} MT`);
+
+    } else {
+      addLine("Freight Type = LCL => Using W/M for Buy Rate.");
+
+      // W/M means compare actualWeightTons vs measureSideCBM
+      addLine(`Compare actualWeightTons (${actualWeightTons.toFixed(3)}) vs measureSideCBM (${measureSideCBM.toFixed(3)}).`);
+      buyRateUnits = Math.max(actualWeightTons, measureSideCBM);
+      addLine(`=> buyRateUnits (W/M) = ${buyRateUnits.toFixed(3)}`);
+    }
+
+    // Now multiply by buyRate
+    const buyRateCost = buyRateUnits * buyRate;
+    addLine(`Buy Rate Cost = buyRateUnits × buyRate
+= ${buyRateUnits.toFixed(3)} × $${buyRate} 
+= $${buyRateCost.toFixed(2)}`);
+
+    // ========== MARGIN RATE (user-chosen) ==========
+    addLine("=== MARGIN RATE CALC (Selected Rule) ===");
+    let marginUnits = 0;
+
+    function applyAirVolumetricKG(baseWeightKG) {
+      // If the margin rule checks weight for air, we could do volumetric. 
+      // But you have separate ratio logic if you like. 
+      // We'll just keep this example consistent with your existing approach:
+      addLine("Optional: If we want to consider standard air volumetric (6000 cc rule) for margin...");
       const lengthCM = length * 100;
       const widthCM = width * 100;
       const heightCM = height * 100;
-
-      // 2) Multiply them to get total cubic centimeters
       const volumeCC = lengthCM * widthCM * heightCM;
+      const volKG = volumeCC / 6000;
 
-      // 3) Divide by 6000 to get volumetric KG
-      const volumetricKG = volumeCC / 6000;
+      addLine(`volKG = (L_cm×W_cm×H_cm) ÷ 6000
+= ${volKG.toFixed(2)} kg
+Compare volKG with baseWeightKG = ${baseWeightKG.toFixed(2)} kg
+`);
 
-      // 4) Convert KG → Metric Tons
-      return volumetricKG / 1000;
-    }
-
-    // --------------------------------------------------------------------
-    // STEP B: BUY RATE (W/M)
-    // --------------------------------------------------------------------
-    addLine("STEP B: Buy Rate Calculation (W/M)");
-
-    // Start with weight side as actual weight in MT
-    let buyWeightSide = actualWeightTons;
-    addLine(`1) Buy Weight Side starts as Actual Weight = ${buyWeightSide.toFixed(3)} MT`);
-
-    if (freightType === "air") {
-      addLine(`2) Because Freight Type = "air", we do an air volumetric check:
-   - First, convert each dimension (in meters) to centimeters by multiplying by 100.
-   - Then apply: volumetricKG = (L_cm × W_cm × H_cm) ÷ 6000.
-   - Convert that KG to metric tons for comparison with actual weight.`);
-
-      const volTons = getVolumetricTons();
-      addLine(`   => Computed Volumetric Tons = ${volTons.toFixed(3)} MT
-Compare vs actualWeightTons (${buyWeightSide.toFixed(3)} MT).`);
-
-      if (volTons > buyWeightSide) {
-        buyWeightSide = volTons;
-        addLine(`   => Volumetric is bigger => buyWeightSide = ${buyWeightSide.toFixed(3)} MT`);
-      } else {
-        addLine("   => Actual weight remains larger => no change.");
-      }
-    } else {
-      addLine("2) Not air => skip volumetric check for Buy Rate.");
-    }
-
-    // Compare buyWeightSide to measureSideCBM
-    addLine(`3) Compare Weight side (${buyWeightSide.toFixed(3)} MT) vs Volume side (${measureSideCBM.toFixed(3)} m³)
-   W/M picks whichever is larger => buyRateUnits.`);
-
-    const buyRateUnits = Math.max(buyWeightSide, measureSideCBM);
-    addLine(`   => buyRateUnits = ${buyRateUnits.toFixed(3)}`);
-
-    // Multiply by buyRate to get Buy Rate Cost
-    const buyRateCost = buyRateUnits * buyRate;
-    addLine(`4) Buy Rate Cost
-   = buyRateUnits × buyRate
-   = ${buyRateUnits.toFixed(3)} × $${buyRate}
-   = $${buyRateCost.toFixed(2)}`);
-
-    // --------------------------------------------------------------------
-    // STEP C: Margin Rate (selected rule)
-    // --------------------------------------------------------------------
-    addLine("STEP C: Margin Rate Calculation");
-
-    let marginUnits = 0;
-
-    // Helper for margin side if air: compare volumetric to the base weight
-    function applyAirVolumetricForMargin(baseWeight) {
-      if (freightType === "air") {
-        addLine(`(Air => also compare volumetric for margin side)
-   Using the same dimension-to-cm conversion, then ÷6000 for KG, and ÷1000 for tons if needed.`);
-
-        const volTons = getVolumetricTons();
-        addLine(`   => volTons = ${volTons.toFixed(3)} MT
-Compare vs baseWeight = ${baseWeight.toFixed(3)} MT`);
-
-        if (volTons > baseWeight) {
-          addLine(`   => Volumetric is bigger => new weight = ${volTons.toFixed(3)} MT`);
-          return volTons;
-        } else {
-          addLine(`   => Keep baseWeight = ${baseWeight.toFixed(3)} MT`);
-          return baseWeight;
-        }
-      } else {
-        addLine("(Not air => no volumetric check for margin side.)");
-        return baseWeight;
-      }
+      const biggerKG = Math.max(volKG, baseWeightKG);
+      addLine(`=> biggerKG = ${biggerKG.toFixed(2)} kg`);
+      return biggerKG;
     }
 
     switch (marginRule) {
       case "CW_1_TO_3": {
-        addLine(`Rule: Cargo Weight 1 to 3 => 1 CBM = 333 kg => 0.333 MT per CBM`);
-        // ratio-based
-        const ratioTons = (measureSideCBM * 333) / 1000;
-        addLine(`   ratioTons = (CBM × 333) ÷ 1000
-   => (${measureSideCBM.toFixed(3)} × 333) ÷ 1000
-   => ${ratioTons.toFixed(3)} MT
-Compare to actualWeightTons (${actualWeightTons.toFixed(3)}) => bigger is weightSide.`);
+        addLine("Rule: Cargo Weight 1:3 => 1 CBM = 333 kg");
+        const ratioWeightKG = measureSideCBM * 333;
+        addLine(`ratioWeightKG = ${measureSideCBM.toFixed(3)} × 333 = ${ratioWeightKG.toFixed(2)} kg
+Compare vs actualWeightKG = ${actualWeightKG.toFixed(2)} kg
+`);
+        let biggerKG = Math.max(ratioWeightKG, actualWeightKG);
 
-        let weightSide = Math.max(ratioTons, actualWeightTons);
-        addLine(`   => weightSide = ${weightSide.toFixed(3)} MT`);
-        weightSide = applyAirVolumetricForMargin(weightSide);
+        if (freightType === "air") {
+          addLine("Freight Type = Air => compare with 6000 cc volumetric as well?");
+          biggerKG = Math.max(biggerKG, applyAirVolumetricKG(biggerKG));
+        }
 
-        marginUnits = Math.max(weightSide, measureSideCBM);
-        addLine(`   => marginUnits = max(weightSide, CBM)
-   => ${marginUnits.toFixed(3)}`);
+        addLine(`=> final weight side in KG = ${biggerKG.toFixed(2)}
+Now compare to volume (CBM = ${measureSideCBM.toFixed(3)}). 
+But to compare kg vs CBM, we typically turn biggerKG into tons or keep as is? 
+We'll do the same approach as your ratio logic => might pick the bigger if in 'ton' vs CBM.
+`);
+
+        // Convert biggerKG to tons
+        const biggerTons = biggerKG / 1000;
+        marginUnits = Math.max(biggerTons, measureSideCBM);
+        addLine(`=> marginUnits = max(${biggerTons.toFixed(3)} MT, ${measureSideCBM.toFixed(3)} m³)
+= ${marginUnits.toFixed(3)}`);
         break;
       }
 
       case "CW_1_TO_6": {
-        addLine("Rule: Cargo Weight 1 to 6 => 1 CBM = 167 kg => 0.167 MT per CBM");
-        const ratioTons = (measureSideCBM * 167) / 1000;
-        addLine(`   => ratioTons = ${ratioTons.toFixed(3)} MT
-Compare vs actualWeightTons = ${actualWeightTons.toFixed(3)} => pick bigger.`);
+        addLine("Rule: Cargo Weight 1:6 => 1 CBM = 167 kg");
+        const ratioWeightKG = measureSideCBM * 167;
+        addLine(`ratioWeightKG = ${ratioWeightKG.toFixed(2)} kg
+Compare vs actualWeightKG = ${actualWeightKG.toFixed(2)}`);
+        let biggerKG = Math.max(ratioWeightKG, actualWeightKG);
 
-        let weightSide = Math.max(ratioTons, actualWeightTons);
-        weightSide = applyAirVolumetricForMargin(weightSide);
-        marginUnits = Math.max(weightSide, measureSideCBM);
-        addLine(`   => marginUnits = ${marginUnits.toFixed(3)}`);
+        if (freightType === "air") {
+          addLine("Check possible volumetric vs biggerKG");
+          biggerKG = Math.max(biggerKG, applyAirVolumetricKG(biggerKG));
+        }
+
+        const biggerTons = biggerKG / 1000;
+        marginUnits = Math.max(biggerTons, measureSideCBM);
+        addLine(`=> marginUnits = ${marginUnits.toFixed(3)}`);
         break;
       }
 
       case "M": {
-        addLine("Rule: M => purely per cubic meter (CBM).");
+        addLine("Rule: M => per Cubic Meter, ignoring weight");
         marginUnits = measureSideCBM;
-        addLine(`   => marginUnits = ${marginUnits.toFixed(3)}`);
+        addLine(`=> marginUnits = ${measureSideCBM.toFixed(3)}`);
         break;
       }
 
       case "W/M": {
-        addLine("Rule: W/M => compare weight side (in MT) vs. CBM, possibly air volumetric if bigger.");
-        let wSide = applyAirVolumetricForMargin(actualWeightTons);
-        marginUnits = Math.max(wSide, measureSideCBM);
-        addLine(`   => marginUnits = ${marginUnits.toFixed(3)}`);
+        addLine("Rule: W/M => compare weight side vs. measure side");
+        let wSideTons = actualWeightTons;
+
+        if (freightType === "air") {
+          addLine("Also check 6000 cc volumetric for margin side:");
+          const biggerKG = Math.max(weightKG, applyAirVolumetricKG(weightKG));
+          wSideTons = biggerKG / 1000;
+          addLine(`=> wSideTons = ${wSideTons.toFixed(3)} (after volumetric check)`);
+        }
+
+        marginUnits = Math.max(wSideTons, measureSideCBM);
+        addLine(`=> marginUnits = max(${wSideTons.toFixed(3)}, ${measureSideCBM.toFixed(3)}) = ${marginUnits.toFixed(3)}`);
         break;
       }
 
       case "PER_KG": {
-        addLine("Rule: Per KG => purely actual weight in kilograms (ignore volume).");
+        addLine("Rule: Per KG => purely actual weight in kg (no volume).");
+        // Typically ignoring volumetric unless you want it. We'll keep it simple:
         marginUnits = weightKG;
-        addLine(`   => marginUnits = ${marginUnits.toFixed(2)} kg`);
+        addLine(`=> marginUnits = ${marginUnits.toFixed(2)} kg`);
         break;
       }
 
       case "PER_W": {
-        addLine("Rule: Per W => purely weight in MT, or volumetric if air is bigger.");
-        let wTons = applyAirVolumetricForMargin(actualWeightTons);
-        marginUnits = wTons;
-        addLine(`   => marginUnits = ${marginUnits.toFixed(3)} MT`);
+        addLine("Rule: Per Weight => purely weight in metric tons, possibly check volumetric if air.");
+        let baseKG = weightKG;
+        if (freightType === "air") {
+          baseKG = Math.max(baseKG, applyAirVolumetricKG(baseKG));
+        }
+        marginUnits = baseKG / 1000;
+        addLine(`=> marginUnits = ${marginUnits.toFixed(3)} MT (ignore volume)`);
         break;
       }
 
       case "PER_M": {
-        addLine("Rule: Per M => purely volume in CBM, ignoring weight.");
+        addLine("Rule: Per M => purely CBM, ignore weight");
         marginUnits = measureSideCBM;
-        addLine(`   => marginUnits = ${marginUnits.toFixed(3)} m³`);
+        addLine(`=> marginUnits = ${marginUnits.toFixed(3)} m³`);
         break;
       }
     }
 
+    // Multiply marginUnits by marginRate
     const marginCost = marginUnits * marginRate;
-    addLine(`2) Margin Cost = marginUnits × marginRate
-   => ${marginUnits.toFixed(3)} × $${marginRate}
-   => $${marginCost.toFixed(2)}`);
+    addLine(`Margin Cost = marginUnits × marginRate
+= ${marginUnits.toFixed(3)} × $${marginRate} 
+= $${marginCost.toFixed(2)}`);
 
-    // --------------------------------------------------------------------
-    // STEP D: Final Totals
-    // --------------------------------------------------------------------
-    addLine("STEP D: Final Totals");
-
+    // Final
     const totalCost = buyRateCost + marginCost;
-    addLine(`1) Buy Rate Cost = $${buyRateCost.toFixed(2)}
-2) Margin Cost     = $${marginCost.toFixed(2)}
-=> Total Freight Cost = $${totalCost.toFixed(2)}`);
+    addLine("=== TOTAL COST ===");
+    addLine(`Buy Rate Cost = $${buyRateCost.toFixed(2)}
+Margin Cost  = $${marginCost.toFixed(2)}
+Total        = $${totalCost.toFixed(2)}`);
 
-    // ELI5 Explanation
+    // ELI5
     const simplifiedText = `
-We always do W/M for the Buy Rate, comparing weight in metric tons (and if air, also
-volumetric) vs. the volume in CBM. Then we apply whichever margin rule is selected for 
-the Margin Rate. If air, we again check volumetric if that rule compares weight.
-Finally, add Buy Rate Cost + Margin Cost for total.
+Air Freight (Buy Rate) => 1:6 ratio (1 CBM = 167 kg), 
+LCL (Buy Rate) => W/M (Weight or Measure).
+Margin Rate => user-selected rule. 
+Total = Buy Rate Cost + Margin Cost.
     `.trim();
 
-    // Update the UI with the breakdown
+    // Output results
     document.getElementById("calculationBreakdown").textContent = breakdownText.trim();
     document.getElementById("ELI5Explanation").textContent = simplifiedText;
     document.getElementById("ELI5Explanation").classList.add("hidden");
 
-    // Update the results panel
     document.getElementById("buyUnitsDisplay").textContent = buyRateUnits.toFixed(3);
     document.getElementById("marginUnitsDisplay").textContent = marginUnits.toFixed(3);
     document.getElementById("buyRateCost").textContent = `$${buyRateCost.toFixed(2)}`;
